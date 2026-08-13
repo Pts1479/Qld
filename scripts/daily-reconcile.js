@@ -68,33 +68,39 @@ for (const { job, pos, sheets, costings, variations, claims } of perJob) {
   const claimed = rnd(job.totalClaimedPercent);
 
   // --- TIMESHEET: field-level match --------------------------------------
+  // Aggregated per job. One row per sheet buries the signal: a single job can
+  // carry 30+ stale sheets, and the actionable unit is the job, not the sheet.
+  const stale = [], unlinked = [];
   for (const t of sheets) {
     if (t.isProcessed) {
       // Processed but never bound to a costing line — cost landed in a generic
       // bucket instead of against the work it belongs to.
-      if (!t.costingItemId) {
-        ex.timesheet.push({
-          type: 'TIMESHEET_UNLINKED', job: name(job),
-          who: t.member ? [t.member.firstName, t.member.lastName].filter(Boolean).join(' ') : '',
-          date: (t.startTime || '').slice(0, 10),
-          costExGst: rnd(t.actualCost),
-          category: t.costingCategoryName || null,
-          fix: 'reallocate_timesheet to the correct costing item'
-        });
-      }
+      if (!t.costingItemId) unlinked.push(t);
       continue;
     }
     const age = daysSince(t.startTime);
-    if (age !== null && age > TIMESHEET_AGE) {
-      ex.timesheet.push({
-        type: 'TIMESHEET_UNPROCESSED', job: name(job),
-        who: t.member ? [t.member.firstName, t.member.lastName].filter(Boolean).join(' ') : '',
-        date: (t.startTime || '').slice(0, 10), ageDays: age,
-        // hours and rate are both computed at processing time; zero here is
-        // normal, not corrupt.
-        fix: 'process_timesheet with useDefaultRate: true'
-      });
-    }
+    // hours and rate are both computed at processing time; zero here is
+    // normal, not corrupt.
+    if (age !== null && age > TIMESHEET_AGE) stale.push({ t, age });
+  }
+  if (stale.length) {
+    const workers = [...new Set(stale.map(s => s.t.member
+      ? [s.t.member.firstName, s.t.member.lastName].filter(Boolean).join(' ') : 'unassigned'))];
+    ex.timesheet.push({
+      type: 'TIMESHEET_UNPROCESSED', job: name(job),
+      sheets: stale.length,
+      oldestDays: Math.max(...stale.map(s => s.age)),
+      workers,
+      fix: 'process_timesheet with useDefaultRate: true'
+    });
+  }
+  if (unlinked.length) {
+    ex.timesheet.push({
+      type: 'TIMESHEET_UNLINKED', job: name(job),
+      sheets: unlinked.length,
+      costExGst: rnd(unlinked.reduce((a, t) => a + (t.actualCost || 0), 0)),
+      fix: 'reallocate_timesheet to the correct costing item'
+    });
   }
 
   // --- PURCHASE: committed but never received ------------------------------
@@ -138,6 +144,9 @@ for (const { job, pos, sheets, costings, variations, claims } of perJob) {
     ex.claim.push({
       type: v.status === 'APPROVED_BY_BUILDER' ? 'VARIATION_UNCLAIMED' : 'VARIATION_UNAPPROVED',
       job: name(job), variation: (v.name || '').slice(0, 38), status: v.status,
+      // Key on the id, not the name: two variations on one job can share a
+      // truncated name ("Corten steel edging along the …") and collide.
+      key: v._id,
       remainingExGst: remaining,
       fix: v.status === 'APPROVED_BY_BUILDER'
         ? 'create_progress_claim with variationItems[]'
@@ -168,12 +177,15 @@ for (const { job, pos, sheets, costings, variations, claims } of perJob) {
       driftExGst: rnd(catSum - (job.totalActualCost || 0))
     });
   }
-  const claimSum = claims.reduce((a, c) => a + (c.total || 0), 0);
-  if (claimSum > 0 && Math.abs(claimSum - (job.totalClaims || 0)) > DRIFT_TOLERANCE) {
+  // A progress claim's `total` is inc-GST but the job's `totalClaims` is ex-GST.
+  // Compare ex-GST against ex-GST or every job on the book reports a phantom
+  // drift of exactly 10% — which is what the first dry run did.
+  const claimSumExGst = claims.reduce((a, c) => a + ((c.total || 0) - (c.GST || 0)), 0);
+  if (claimSumExGst > 0 && Math.abs(claimSumExGst - (job.totalClaims || 0)) > DRIFT_TOLERANCE) {
     ex.integrity.push({
       type: 'CLAIM_SUM_DRIFT', job: name(job),
-      claimSumIncGst: rnd(claimSum), jobClaimsIncGst: rnd(job.totalClaims),
-      driftIncGst: rnd(claimSum - (job.totalClaims || 0))
+      claimSumExGst: rnd(claimSumExGst), jobClaimsExGst: rnd(job.totalClaims),
+      driftExGst: rnd(claimSumExGst - (job.totalClaims || 0))
     });
   }
   // A contract priced at cost carries no margin by construction.
@@ -199,9 +211,10 @@ return {
   exceptionCount: total,
   counts,
   exceptions: ex,
-  // Compact fingerprint for day-over-day diffing. Compare against the previous
-  // run's list; report only what is new or resolved.
+  // Fingerprints must be UNIQUE per exception or the diff misreports. Every
+  // exception is either one-per-job or keyed by its own record id, so
+  // type + job + key is stable across runs without colliding.
   fingerprints: Object.values(ex).flat()
-    .map(e => [e.type, e.job, e.invoice || e.variation || e.reference || e.who || e.date || ''].join('|'))
+    .map(e => [e.type, e.job, e.key || e.invoice || e.reference || ''].join('|'))
     .sort()
 };
