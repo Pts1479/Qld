@@ -13,13 +13,39 @@ Two MCP calls per bill (`get` for line-item ids, then `process`), so the full ba
 is roughly **490 calls** — a multi-session task. Work each job largest-bill-first: value
 is steeply distributed and a batch that stops early still captures the margin signal.
 
+## BLOCKER — `unarchive` fails via MCP after the first call
+
+Ison & Wright (1005) unarchived successfully on the first attempt. **Every subsequent
+unarchive has failed**, returning only "Something went wrong processing the request":
+
+| Job | Attempts | Board stage | Result |
+|---|---|---|---|
+| Ison & Wright (1005) | 1 | In Construction | Succeeded |
+| Kersey (1006) | 3 | Handover | Failed, no partial state |
+| Justin and Lisa Hallet (1024) | 1 | In Construction | Failed, no partial state |
+
+Job state was re-read after every failure: both jobs remain `archived` + `isLocked`,
+so nothing is half-applied and there is nothing to clean up. Board stage is not the
+differentiator — Hallet shares Ison & Wright's stage and still failed. It is not a
+permissions issue; the error originates server-side in Wunderbuild.
+
+**Workaround:** unarchive the jobs from the Wunderbuild UI, then allocation via MCP
+works normally — `manage_bills process` has succeeded 8 times without error.
+
+**Do not re-archive job 1005 until its remaining bills are allocated.** If unarchive
+stays unreliable, re-archiving now would make it impossible to reopen and finish.
+
 ## Status by job
 
 | Job | # | Ignored bills inc-GST | Allocated | Remaining | State |
 |---|---|---|---|---|---|
-| Ison & Wright | 1005 | $74,528 | $58,917 (8 bills, 79%) | $15,611 (30 bills) | **Unarchived — re-archive when done** |
-| Kersey | 1006 | $80,323 | — | $80,323 (26 bills) | Not started |
-| Remaining 24 jobs | — | ~$240,563 | — | ~$240,563 | Not started |
+| Ison & Wright | 1005 | $74,528 | $58,917 (8 bills, 79%) | $15,611 (30 bills) | Unarchived — **keep open**, work remaining bills |
+| Kersey | 1006 | $80,323 | — | $80,323 (26 bills) | **Blocked** — unarchive fails |
+| Justin and Lisa Hallet | 1024 | $74,527 | — | $74,527 (42 bills) | **Blocked** — unarchive fails |
+| Remaining 23 jobs | — | ~$166,036 | — | ~$166,036 | Not started |
+
+Three jobs alone — 1005, 1006 and 1024 — hold **$229,378 of the $395,414**, i.e. 58%
+of the entire backlog across 107 bills.
 
 ## Ison & Wright (job 1005, 17 Palm Drive) — first result
 
