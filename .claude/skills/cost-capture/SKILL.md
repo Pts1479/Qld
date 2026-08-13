@@ -99,18 +99,65 @@ Two quality notes worth raising while you're in there: most timesheets carry
 generic bucket rather than against the cost line it belongs to. Costs reaching the job
 at all is the win; attributing them to the right line is the next increment.
 
-## Allocating an ignored bill
+## Allocating an ignored bill — verified runbook
 
-`manage_bills` action `process` with `data.jobId` and per-line mapping. Each line takes
-a `costingCategoryId` (routes into an existing category) or `costingCategoryName`
-(creates/uses one by name); omit both and the line lands in Unallocated. `costingItemId`
-is only valid alongside that item's `costingCategoryId`.
+Worked out against live data on 2026-08-13. Follow it exactly; two of the steps are
+non-obvious and the failure mode is a generic, uninformative error.
+
+**The bills are already coded to jobs.** Xero's tracking carries through: every bill's
+`items[].job` names the job it belongs to, and `manage_bills` action `list` accepts a
+`jobId` filter *alongside* `importStatus: "IGNORED"`. So this is a batch job sorted by
+job, not a forensic matching exercise. Never match by date — several jobs overlap in
+any given month and you will misallocate.
+
+**Step 1 — unarchive the job.** Completed jobs are archived AND `isLocked: true`, and a
+locked job rejects `process`. `manage_job` action `unarchive` with `confirm: true`
+clears both (status → active, `isLocked` → false). There is no separate unlock action.
+
+**Step 2 — read each bill's line-item ids.** `manage_bills` action `get` returns
+`items[]._id`. You need these; there is no way to skip this call, so budget two calls
+per bill.
+
+**Step 3 — process with an explicit `items[]` mapping.**
+
+```
+manage_bills action=process billId=<bill>
+  data: { jobId, internalNote, items: [{ _id: <line id>, costingCategoryName: "Tiling" }] }
+```
+
+**`items[]` is mandatory.** Calling `process` with only a `jobId` fails with
+"Something went wrong processing the request" — not a validation message naming the
+missing field. This was verified twice, including once after the job was unlocked and a
+costing category already existed, so it is the payload and not the lock. If you see
+that generic error, the mapping is what's missing.
+
+**Step 4 — re-archive** with `manage_job` action `archive` once the job's bills are
+done. Until then the job shows in the active list and distorts portfolio views.
+
+Derive `costingCategoryName` from the supplier and the line description, both of which
+are usually explicit ("Corey Ison - Palm Drive", "BBQ Area", "50% deposit on pool fence,
+deck screen and battens"). Trade-level categories give the reconstructed job a legible
+cost breakdown; one lump category tells you nothing beyond the total.
 
 Check `isCostCodeOnly` on the target job first — if set, every line must carry a
 `costCodeCategoryId` and cannot be left unallocated.
 
 `ignore` is reversible and takes an internal note. `delete` is destructive and needs
 `confirm: true` — never delete a bill to tidy the queue.
+
+### Watch for duplicates before allocating
+
+Xero holds both quotes and invoices from some suppliers. On Ison & Wright, All Custom
+Solutions appears as references `234` and `Q234` for an identical $1,161.60 — almost
+certainly one job billed once. Allocating both would overstate that job's cost. Where
+two bills from one supplier share an amount and differ only by a `Q` prefix, confirm
+with Paul before processing either.
+
+### Sequence the value, not the list
+
+Bill values are steeply distributed. On Ison & Wright, 8 of 39 bills carried 79% of the
+value and 12 carried 91%. Work each job's bills largest-first so a batch that stops
+early has still captured the margin signal.
 
 ## Safety
 

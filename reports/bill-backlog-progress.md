@@ -1,0 +1,77 @@
+# Ignored bill backlog — allocation progress
+
+Started 2026-08-13. Tracks the review of 244 supplier bills worth **$395,414 inc-GST**
+that were marked IGNORED in Wunderbuild instead of allocated to a job.
+
+Paul approved unarchiving all 26 completed jobs and working the full backlog
+(2026-08-13). Bills are pre-coded to jobs by Xero tracking, so each job's set is
+retrievable with `manage_bills list` + `jobId` + `importStatus: IGNORED`.
+
+## Scale
+
+Two MCP calls per bill (`get` for line-item ids, then `process`), so the full backlog
+is roughly **490 calls** — a multi-session task. Work each job largest-bill-first: value
+is steeply distributed and a batch that stops early still captures the margin signal.
+
+## Status by job
+
+| Job | # | Ignored bills inc-GST | Allocated | Remaining | State |
+|---|---|---|---|---|---|
+| Ison & Wright | 1005 | $74,528 | $58,917 (8 bills, 79%) | $15,611 (30 bills) | **Unarchived — re-archive when done** |
+| Kersey | 1006 | $80,323 | — | $80,323 (26 bills) | Not started |
+| Remaining 24 jobs | — | ~$240,563 | — | ~$240,563 | Not started |
+
+## Ison & Wright (job 1005, 17 Palm Drive) — first result
+
+| | ex-GST |
+|---|---|
+| Contract | $51,317 |
+| Cost booked before review | $21,620 |
+| Cost added from 8 bills | $53,561 |
+| **Cost now** | **$75,181** |
+| **Result so far** | **−$23,864** |
+| Projected once remaining 30 bills load | ≈ **−$38,000** |
+
+Cost breakdown after allocation:
+
+| Category | Actual |
+|---|---|
+| Tiling | $28,320 |
+| Timesheet | $14,125 |
+| Pool Fence, Deck Screen & Battens | $9,743 |
+| Purchase Order 01004 | $7,495 |
+| BBQ Area | $5,670 |
+| Painting | $5,563 |
+| Glass & Balustrade | $4,245 |
+| Backlog allocation - materials | $20 |
+
+Tiling alone consumed **55% of the entire contract value**. The job also carries no
+markup — contract and estimated cost were both recorded as $51,317, i.e. sold at cost
+on paper before any overrun.
+
+## Open items
+
+- **Re-archive job 1005** once its remaining 30 bills are allocated.
+- **Duplicate to confirm before allocating:** All Custom Solutions `234` and `Q234`,
+  both $1,161.60 on job 1005. Likely one job billed once, held in Xero as both quote
+  and invoice. Neither has been processed.
+- **One category naming inconsistency:** the first test bill ($22 Life Time Timbers)
+  landed in "Backlog allocation - materials" before the trade-category convention was
+  settled. Cosmetic; left as-is.
+- **Four jobs carry no markup at all** — contract equals estimated cost exactly:
+  Kersey, David Poulsen, Ison & Wright, Geall.
+
+## Correction to the 2026-08-13 cost-capture report
+
+Two findings in that report were overstated and are corrected here:
+
+1. **The three Boshoff jobs have not started** (start dates 24 Aug and 1 Sep). Their 50%
+   claims are deposits on unstarted work, so zero recorded cost is correct. That removes
+   $114,981 of the $187,377 "off-book exposure" and three of the six claim-gate breaches.
+2. **The ignored bills do not touch the live book.** Boshoff Landscaping and Gabriel
+   Miller have no bills of any status. This backlog fixes margin *history*, which is what
+   pricing decisions need — it does not recover cash or fix a current job.
+
+The one genuine live cost-capture problem is **Linton**: 51% invoiced with $3,012 of cost
+recorded. Miller, Poulsen and Purcell all finished within the last two weeks, so their
+supplier invoices need a fortnight to land before their capture rate means anything.
