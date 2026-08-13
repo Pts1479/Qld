@@ -40,6 +40,11 @@ book, reporting only records whose fields don't line up:
 **If nothing is new and nothing resolved, it says nothing.** A daily report that repeats
 yesterday gets ignored, which defeats the point.
 
+Schedule: `trig_01BnAeaqFoawSHdRnE5TMhLN`, cron `0 21 * * *` UTC. The routine was created
+from a session that could not pass connectors through, so the **Wunderbuild connector is
+attached manually via the claude.ai Routines UI**. If a run reports no data or cannot
+reach Wunderbuild, check that first — the sweep itself is validated.
+
 ## Running the sweep
 
 Ask Claude to *run the receivables sweep*, or invoke the skill directly. It reads
