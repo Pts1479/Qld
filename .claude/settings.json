@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "permissions": {
+    "allow": [
+      "mcp__Wunderbuild__run_query",
+      "mcp__Wunderbuild__get_portfolio_snapshot",
+      "mcp__Wunderbuild__search_wunderbuild",
+      "mcp__Wunderbuild__lookup_reference",
+      "mcp__Wunderbuild__list_knowledge_topics",
+      "mcp__Wunderbuild__get_wunderbuild_knowledge",
+      "mcp__Wunderbuild__track_job_progress",
+      "mcp__Wunderbuild__track_lead",
+      "mcp__Wunderbuild__track_supplier_compliance",
+      "mcp__Wunderbuild__manage_rates",
+      "mcp__Wunderbuild__manage_timesheets",
+      "mcp__Wunderbuild__manage_bills",
+      "mcp__Wunderbuild__run_job_finances",
+      "mcp__Wunderbuild__manage_job",
+
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__run_query",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__get_portfolio_snapshot",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__search_wunderbuild",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__lookup_reference",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__list_knowledge_topics",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__get_wunderbuild_knowledge",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__track_job_progress",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__track_lead",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__track_supplier_compliance",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__manage_rates",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__manage_timesheets",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__manage_bills",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__run_job_finances",
+      "mcp__ec60ad3d-6bfc-4881-b2c1-759cd6a56c4b__manage_job",
+
+      "Bash(git status*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Read"
+    ]
+  }
+}
