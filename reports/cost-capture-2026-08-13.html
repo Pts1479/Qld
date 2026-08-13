@@ -1,0 +1,400 @@
+<title>Cost Capture Gap</title>
+<style>
+  :root {
+    --ground: #F1F2F0;
+    --surface: #FAFAF9;
+    --surface-2: #E8EAE7;
+    --ink: #1A1D1B;
+    --ink-2: #454A47;
+    --muted: #6B706C;
+    --rule: #D3D7D2;
+    --corten: #A8401A;
+    --corten-soft: #F0DDD4;
+    --ochre: #9C6B0E;
+    --ochre-soft: #F2E6C9;
+    --eucalypt: #2F6B4F;
+    --eucalypt-soft: #D9E7DF;
+    --slate: #3E6280;
+    --shadow: 0 1px 2px rgba(26, 29, 27, .06), 0 4px 14px rgba(26, 29, 27, .05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141614;
+      --surface: #1C1F1D;
+      --surface-2: #262A27;
+      --ink: #ECEEEB;
+      --ink-2: #B9BEB9;
+      --muted: #878D87;
+      --rule: #333733;
+      --corten: #E0784A;
+      --corten-soft: #3A2118;
+      --ochre: #D6A63F;
+      --ochre-soft: #352C13;
+      --eucalypt: #6FB894;
+      --eucalypt-soft: #16291F;
+      --slate: #7BA3C4;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #141614;
+    --surface: #1C1F1D;
+    --surface-2: #262A27;
+    --ink: #ECEEEB;
+    --ink-2: #B9BEB9;
+    --muted: #878D87;
+    --rule: #333733;
+    --corten: #E0784A;
+    --corten-soft: #3A2118;
+    --ochre: #D6A63F;
+    --ochre-soft: #352C13;
+    --eucalypt: #6FB894;
+    --eucalypt-soft: #16291F;
+    --slate: #7BA3C4;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 96px; display: flex; flex-direction: column; gap: 44px; }
+
+  .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  }
+
+  h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; letter-spacing: -.025em; font-weight: 800; margin: 8px 0 0; text-wrap: balance; }
+  h2 { font-size: 21px; letter-spacing: -.015em; font-weight: 700; margin: 0; text-wrap: balance; }
+  h3 { font-size: 15px; font-weight: 700; margin: 0; letter-spacing: -.005em; }
+  p { margin: 0; max-width: 68ch; color: var(--ink-2); }
+  header .lede { margin-top: 14px; font-size: 17px; }
+
+  section { display: flex; flex-direction: column; gap: 18px; }
+  .sec-head { display: flex; flex-direction: column; gap: 5px; border-top: 2px solid var(--ink); padding-top: 12px; }
+
+  .figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .fig {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow);
+  }
+  .fig.lead { border-color: var(--corten); border-width: 1px 1px 1px 4px; }
+  .fig .val { font-size: 30px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+  .fig.lead .val { color: var(--corten); }
+  .fig .sub { font-size: 12.5px; color: var(--muted); }
+
+  /* capture meters */
+  .meters { display: flex; flex-direction: column; gap: 10px; }
+  .meter { display: grid; grid-template-columns: 220px 1fr 54px; align-items: center; gap: 14px; }
+  .meter .name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meter .track { background: var(--surface-2); border-radius: 2px; height: 22px; position: relative; overflow: hidden; }
+  .meter .fill { height: 100%; }
+  .meter .floor {
+    position: absolute; top: 0; bottom: 0; left: 90%; width: 2px; background: var(--ink); opacity: .45;
+  }
+  .meter .pctv { font-size: 13px; font-weight: 700; text-align: right; }
+
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 540px; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--rule); }
+  th {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.r, th.r { text-align: right; }
+  tfoot td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: none; background: var(--surface-2); }
+
+  .pill {
+    display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 2px; white-space: nowrap;
+  }
+  .pill.crit { background: var(--corten-soft); color: var(--corten); }
+  .pill.warn { background: var(--ochre-soft); color: var(--ochre); }
+  .pill.ok { background: var(--eucalypt-soft); color: var(--eucalypt); }
+
+  .note {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--slate);
+    border-radius: 3px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow);
+  }
+  .note.flag { border-left-color: var(--ochre); }
+  .note.good { border-left-color: var(--eucalypt); }
+
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .mode {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow);
+  }
+  .mode.a { border-top: 3px solid var(--corten); }
+  .mode.b { border-top: 3px solid var(--ochre); }
+  .mode ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14px; display: flex; flex-direction: column; gap: 5px; }
+
+  ol.steps { margin: 0; padding-left: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 12px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: start; }
+  ol.steps li::before {
+    content: counter(s);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; font-weight: 700; color: var(--surface); background: var(--corten);
+    width: 26px; height: 26px; border-radius: 2px; display: flex; align-items: center; justify-content: center;
+  }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--muted); font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+
+  @media (max-width: 620px) {
+    .meter { grid-template-columns: 1fr 54px; }
+    .meter .name { grid-column: 1 / -1; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">QLD Group · Sanctum — Wunderbuild, 13 August 2026</div>
+    <h1>Cost Capture Gap</h1>
+    <p class="lede">Why the job book shows 92–98% gross margins that don't exist. The revenue side is being recorded and the cost side isn't — and this is where the missing costs turned out to be.</p>
+  </header>
+
+  <section>
+    <div class="figures">
+      <div class="fig lead">
+        <div class="eyebrow">Bills marked ignored</div>
+        <div class="val num">$395,414</div>
+        <div class="sub">244 supplier invoices never allocated to a job (inc-GST)</div>
+      </div>
+      <div class="fig">
+        <div class="eyebrow">Cost capture</div>
+        <div class="val num">20.3%</div>
+        <div class="sub">$239,648 booked of $1,181,613 estimated</div>
+      </div>
+      <div class="fig">
+        <div class="eyebrow">Costing lines at zero</div>
+        <div class="val num">$578,207</div>
+        <div class="sub">Estimated cost with nothing booked against it</div>
+      </div>
+      <div class="fig">
+        <div class="eyebrow">Timesheets unprocessed</div>
+        <div class="val num">46</div>
+        <div class="sub">Logged labour never costed to a job</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">01 — The answer</div>
+      <h2>244 supplier bills were marked "ignored" instead of allocated</h2>
+    </div>
+    <p>The accounting integration pulled 477 supplier invoices into Wunderbuild. <strong>None are sitting unprocessed</strong> — the queue is clear. But 244 of them were marked <em>ignored</em> rather than imported against a job, and they total <strong>$395,414 inc-GST</strong>. That is not a filing error at the margins. It is most of the missing cost side of the business.</p>
+    <p>Twenty-one of them are $5,000 or more, totalling $233,165. These are not ambiguous overheads — they are unmistakably job costs:</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Supplier</th><th>Reference</th><th class="r">Amount inc-GST</th><th class="r">Dated</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Plant Connections</td><td class="num">54595</td><td class="r num">$21,807.67</td><td class="r num">Mar 2026</td></tr>
+          <tr><td>Quantum Electrical Contracting</td><td class="num">INV-2804</td><td class="r num">$20,615.10</td><td class="r num">Jul 2025</td></tr>
+          <tr><td>CFS Tiling</td><td class="num">INV-20221318</td><td class="r num">$20,152.00</td><td class="r num">Jul 2025</td></tr>
+          <tr><td>Plant Connections</td><td class="num">00052786</td><td class="r num">$18,709.46</td><td class="r num">Aug 2025</td></tr>
+          <tr><td>Coastal Polished Concrete</td><td class="num">1769</td><td class="r num">$13,728.00</td><td class="r num">Sep 2025</td></tr>
+          <tr><td>Berding Concrete</td><td class="num">INV-0370</td><td class="r num">$13,365.00</td><td class="r num">Sep 2025</td></tr>
+          <tr><td>IronBark Timber</td><td class="num">SO033573</td><td class="r num">$12,673.46</td><td class="r num">Apr 2026</td></tr>
+          <tr><td>Berding Concrete</td><td class="num">INV-0369</td><td class="r num">$12,100.00</td><td class="r num">Sep 2025</td></tr>
+          <tr><td>All Custom Solutions</td><td class="num">INV-0218</td><td class="r num">$11,491.87</td><td class="r num">Jul 2025</td></tr>
+          <tr><td>CFS Tiling</td><td class="num">INV-20221299</td><td class="r num">$11,000.00</td><td class="r num">Jun 2025</td></tr>
+          <tr><td>Hampton Glass</td><td class="num">INV-2783</td><td class="r num">$10,695.85</td><td class="r num">Jul 2025</td></tr>
+          <tr><td>The Pump House</td><td class="num">607264</td><td class="r num">$9,662.04</td><td class="r num">Mar 2026</td></tr>
+          <tr><td>Automulch</td><td class="num">INV-0313</td><td class="r num">$8,690.00</td><td class="r num">Sep 2025</td></tr>
+          <tr><td>CFS Tiling</td><td class="num">INV-20221305</td><td class="r num">$7,969.50</td><td class="r num">Jul 2025</td></tr>
+          <tr><td>Hampton Glass</td><td class="num">INV-2836</td><td class="r num">$6,666.00</td><td class="r num">Oct 2025</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="2">All 244 ignored bills</td><td class="r num">$395,413.88</td><td class="r num">—</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="note good">
+      <h3>The habit appears to have stopped around April 2026</h3>
+      <p>The ignored bills cluster between mid-2025 and April 2026. Everything after that is being processed. So this is a historical backlog to clean up rather than an active daily leak — which is considerably better news than the headline number suggests, and it means someone changed how this is handled. The backlog still needs working through, because it holds the cost history for every completed job.</p>
+    </div>
+
+    <div class="note flag">
+      <h3>Not all 244 belong to a job</h3>
+      <p>Some will be legitimate exclusions — duplicates, credits, and genuine overheads like office supplies that shouldn't sit against a job. The list needs a review pass, not a bulk import. Working it in batches by job is the only safe way: a bill allocated to the wrong job moves real money between two jobs' P&Ls and corrupts both.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">02 — Coverage</div>
+      <h2>Cost capture by job, against a 90% floor</h2>
+    </div>
+    <p>The marker on each bar is the 90% floor. Below it, a job's margin figure isn't a margin — it's an artefact of missing data, and it shouldn't be quoted to anyone.</p>
+    <div class="meters">
+      <div class="meter"><div class="name">Pruim — 29 Orme Road</div><div class="track"><div class="fill" style="width:37%;background:var(--ochre);"></div><div class="floor"></div></div><div class="pctv num">37%</div></div>
+      <div class="meter"><div class="name">Rososinski — 164 Palmview Forest Dr</div><div class="track"><div class="fill" style="width:23%;background:var(--ochre);"></div><div class="floor"></div></div><div class="pctv num">23%</div></div>
+      <div class="meter"><div class="name">Linton — 80 Sunbird Chase</div><div class="track"><div class="fill" style="width:1%;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">1%</div></div>
+      <div class="meter"><div class="name">Gabriel Miller — 3A Lynd Court</div><div class="track"><div class="fill" style="width:0;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">0%</div></div>
+      <div class="meter"><div class="name">Juan Boshoff — landscaping</div><div class="track"><div class="fill" style="width:0;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">0%</div></div>
+      <div class="meter"><div class="name">Juan Boshoff — eastern fence</div><div class="track"><div class="fill" style="width:0;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">0%</div></div>
+      <div class="meter"><div class="name">Juan Boshoff — western fence</div><div class="track"><div class="fill" style="width:0;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">0%</div></div>
+      <div class="meter"><div class="name">Purcell — demolition phase</div><div class="track"><div class="fill" style="width:0;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">0%</div></div>
+      <div class="meter"><div class="name">Poulsen — 410 Curramore Road</div><div class="track"><div class="fill" style="width:0;background:var(--corten);"></div><div class="floor"></div></div><div class="pctv num">0%</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">03 — Diagnosis</div>
+      <h2>Two different problems, two different fixes</h2>
+    </div>
+    <p>Treating these the same produces useless advice. One is recoverable by finishing work already started. The other needs the bills to be found first.</p>
+    <div class="modes">
+      <div class="mode a">
+        <span class="pill crit">Off-book — nothing entered</span>
+        <h3>5 jobs · $187,377 exposure</h3>
+        <ul>
+          <li>Boshoff landscaping — $99,936, 50% claimed</li>
+          <li>Poulsen — $51,750</li>
+          <li>Gabriel Miller — $20,646, <strong>100% claimed</strong></li>
+          <li>Boshoff western fence — $9,359</li>
+          <li>Boshoff eastern fence — $5,686</li>
+        </ul>
+        <p style="font-size:13.5px;">No purchase orders, no timesheets, no internal charges. Nothing to finish — the costs must be located, most likely in the ignored bill list, before these jobs mean anything.</p>
+      </div>
+      <div class="mode b">
+        <span class="pill warn">Drifting — started, not finished</span>
+        <h3>4 jobs · $390,830 exposure</h3>
+        <ul>
+          <li>Linton — $188,654 across 22 of 26 categories</li>
+          <li>Pruim — $119,379, but 37% captured</li>
+          <li>Purcell — $59,443, 1 timesheet</li>
+          <li>Rososinski — $23,354, 27 timesheets waiting</li>
+        </ul>
+        <p style="font-size:13.5px;">The process is running but incomplete. These are recoverable by finishing what's already begun, and they hold the fastest wins.</p>
+      </div>
+    </div>
+
+    <div class="note flag">
+      <h3>Gabriel Miller is the case that should worry you most</h3>
+      <p>$26,840 contract, invoiced in full, 100% claimed — and not one dollar of cost recorded against it. The client has paid. Whether that job made money or lost it is currently unknowable, and will stay that way unless its supplier bills are found.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">04 — Claim gate</div>
+      <h2>Six jobs are billing the client faster than they're recording cost</h2>
+    </div>
+    <p>The gap between how much of a job has been invoiced and how much of its cost has been booked. A large gap means money is going out the door as revenue while the cost side stays invisible — which is exactly how a business raises prices, wins more work, and still feels like it's scraping by.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Job</th><th class="r">Claimed</th><th class="r">Cost captured</th><th class="r">Gap</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Gabriel Miller — 1st stage</td><td class="r num">100%</td><td class="r num">0%</td><td class="r num">100</td><td><span class="pill crit">Breach</span></td></tr>
+          <tr><td>Rososinski — 164 Palmview Forest Dr</td><td class="r num">100%</td><td class="r num">23%</td><td class="r num">77</td><td><span class="pill crit">Breach</span></td></tr>
+          <tr><td>Juan Boshoff — landscaping</td><td class="r num">50%</td><td class="r num">0%</td><td class="r num">50</td><td><span class="pill crit">Breach</span></td></tr>
+          <tr><td>Juan Boshoff — eastern fence</td><td class="r num">50%</td><td class="r num">0%</td><td class="r num">50</td><td><span class="pill crit">Breach</span></td></tr>
+          <tr><td>Juan Boshoff — western fence</td><td class="r num">50%</td><td class="r num">0%</td><td class="r num">50</td><td><span class="pill crit">Breach</span></td></tr>
+          <tr><td>Linton — 80 Sunbird Chase</td><td class="r num">51%</td><td class="r num">1%</td><td class="r num">50</td><td><span class="pill crit">Breach</span></td></tr>
+          <tr><td>Pruim — 29 Orme Road</td><td class="r num">53%</td><td class="r num">37%</td><td class="r num">16</td><td><span class="pill ok">Within tolerance</span></td></tr>
+          <tr><td>Purcell — demolition phase</td><td class="r num">5%</td><td class="r num">0%</td><td class="r num">5</td><td><span class="pill ok">Within tolerance</span></td></tr>
+          <tr><td>Poulsen — 410 Curramore Road</td><td class="r num">5%</td><td class="r num">0%</td><td class="r num">5</td><td><span class="pill ok">Within tolerance</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;"><strong>Pruim is the control.</strong> It's the one job being run properly — 50 purchase orders, 50 timesheets, 37% capture and climbing. It proves the process works when someone runs it. Every other job is a question of adoption, not capability.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">05 — Worst single job</div>
+      <h2>Linton: $188,654 of estimate with nothing booked against it</h2>
+    </div>
+    <p>A $274,321 contract, 51% invoiced, with $3,012 of cost recorded. Twenty-two of its twenty-six costing categories are empty. These are the largest:</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Costing category</th><th class="r">Estimated cost</th><th class="r">Booked</th><th class="r">Planned margin</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pool surround</td><td class="r num">$46,168</td><td class="r num">$0</td><td class="r num">20%</td></tr>
+          <tr><td>Stairs — beside pool shell</td><td class="r num">$27,763</td><td class="r num">$0</td><td class="r num">20%</td></tr>
+          <tr><td>Cobblestone install (client supplies stone)</td><td class="r num">$22,760</td><td class="r num">$0</td><td class="r num">20%</td></tr>
+          <tr><td>Turf — Empire Zoysia</td><td class="r num">$12,935</td><td class="r num">$0</td><td class="r num">20%</td></tr>
+          <tr><td>Irrigation</td><td class="r num">$9,917</td><td class="r num">$0</td><td class="r num">20%</td></tr>
+          <tr><td>Turf drainage</td><td class="r num">$7,502</td><td class="r num">$0</td><td class="r num">23.1%</td></tr>
+          <tr><td>Retaining walls — garden bed below pool</td><td class="r num">$7,079</td><td class="r num">$0</td><td class="r num">23.1%</td></tr>
+          <tr><td>Tiling — alfresco</td><td class="r num">$6,786</td><td class="r num">$0</td><td class="r num">20%</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>All 22 empty categories</td><td class="r num">$188,654</td><td class="r num">$0</td><td class="r num">—</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <p style="font-size:14px;">Note the planned margins: 16.7% to 23.1% per category. That's the pricing this job went out at — well under what a licensed design-and-build should command, and with no cost data there's no way to know whether even that was achieved.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">06 — Fastest fix</div>
+      <h2>46 timesheets, one action, real cost booked</h2>
+    </div>
+    <p>The unprocessed timesheets show zero hours and zero rates, which looks like broken data. It isn't. Hours are computed from start and end times, and rates resolve from the rate cards, <em>at the moment of processing</em>. The 62 sheets already processed prove it — they carry real hours and rates of $40–45/hr, and have booked $23,486 between them.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Waiting on</th><th class="r">Sheets</th><th>Jobs affected</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Willie Hughes</td><td class="r num">23</td><td>Pruim, Purcell</td></tr>
+          <tr><td>Nic Crowe</td><td class="r num">12</td><td>Rososinski</td></tr>
+          <tr><td>Leo Le</td><td class="r num">9</td><td>Pruim, Rososinski</td></tr>
+          <tr><td>Craig Borg</td><td class="r num">1</td><td>Linton</td></tr>
+          <tr><td>Unassigned</td><td class="r num">1</td><td>—</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Estimated labour cost to be booked</td><td class="r num" colspan="2">≈ $14,000 – $17,000</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <p style="font-size:14px;">That range is an estimate based on the $379 average of the already-processed sheets. The real figure resolves from the rate cards when they're processed — which is exactly why the rates should never be typed in by hand.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">07 — Order of work</div>
+      <h2>What to do, fastest first</h2>
+    </div>
+    <ol class="steps">
+      <li><div><strong>Process the 46 timesheets using default rates.</strong> One action, books roughly $14–17K of labour cost, and needs no decisions. Check the rate cards first — a worker showing $0 is a blocker, not a number to invent.</div></li>
+      <li><div><strong>Review the 244 ignored bills in batches by job.</strong> Start with the 21 over $5,000 — that's $233,165 and the fastest way to give the completed jobs a real cost history. Expect some to be legitimately ignored; don't bulk import.</div></li>
+      <li><div><strong>Find Gabriel Miller's costs.</strong> Fully invoiced, fully paid, zero cost recorded. It's the smallest job on the list and the clearest test of whether the ignored bills explain the gap.</div></li>
+      <li><div><strong>Then, and only then, look at margin.</strong> Every margin number in the system today is unreliable. Once capture is above 90%, the estimate-integrity check becomes worth building — and you'll finally know whether 20% pricing is holding.</div></li>
+    </ol>
+  </section>
+
+  <footer>
+    <div>Pulled live from Wunderbuild on 13 August 2026 across 9 active jobs, 108 timesheets, 477 supplier bills and 86 costing categories. Bill totals are inc-GST; contract, costing and exposure figures are ex-GST.</div>
+    <div>Re-run with the <span class="num">cost-capture</span> skill, alongside <span class="num">receivables-sweep</span>. Together they produce a real margin; separately, neither is trustworthy.</div>
+  </footer>
+
+</div>

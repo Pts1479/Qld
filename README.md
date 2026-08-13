@@ -17,7 +17,9 @@ software to sell to other trades would not have touched any of that.
 | Path | What it does |
 |---|---|
 | `.claude/skills/receivables-sweep/` | Skill that runs the claims-and-receivables sweep and produces a ranked chase-and-claim list |
+| `.claude/skills/cost-capture/` | Skill that finds job costs which should be booked and aren't — ignored bills, unprocessed timesheets, empty costing lines |
 | `scripts/receivables-sweep.js` | Read-only query, pasted into the Wunderbuild MCP `run_query` tool |
+| `scripts/cost-capture-sweep.js` | Read-only query for the cost side. Bills are fetched separately via `manage_bills` |
 | `reports/` | Dated output. Each report is a snapshot, not a living document |
 
 ## Running the sweep
@@ -46,8 +48,11 @@ Ordered by how fast each converts to cash. Cost capture sits second because unti
 costs are actually booked, nothing downstream is measurable.
 
 1. **Claims & receivables sweep** — built
-2. **Cost-capture agent** — chase unbooked POs, unprocessed timesheets and
-   unallocated bills until actuals reach 90% of estimate
+2. **Cost-capture agent** — built. First run found **244 supplier bills worth
+   $395,414 inc-GST marked IGNORED** instead of allocated to a job, 46 unprocessed
+   timesheets, and 20.3% portfolio cost capture. The ignored bills cluster mid-2025
+   to April 2026 and appear to have stopped since, so it is a backlog to clear rather
+   than an active leak
 3. **Estimate-integrity check** — block any quote leaving below 25% gross margin;
    flag scope categories missing against comparable jobs (Pruim went out underscoped
    by ~58%)
