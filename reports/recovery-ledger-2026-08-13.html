@@ -1,0 +1,625 @@
+<title>Recovery Ledger</title>
+<style>
+  :root {
+    --ground: #F1F2F0;
+    --surface: #FAFAF9;
+    --surface-2: #E8EAE7;
+    --ink: #1A1D1B;
+    --ink-2: #454A47;
+    --muted: #6B706C;
+    --rule: #D3D7D2;
+    --corten: #A8401A;
+    --corten-soft: #F0DDD4;
+    --ochre: #9C6B0E;
+    --ochre-soft: #F2E6C9;
+    --eucalypt: #2F6B4F;
+    --eucalypt-soft: #D9E7DF;
+    --slate: #3E6280;
+    --shadow: 0 1px 2px rgba(26, 29, 27, .06), 0 4px 14px rgba(26, 29, 27, .05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141614;
+      --surface: #1C1F1D;
+      --surface-2: #262A27;
+      --ink: #ECEEEB;
+      --ink-2: #B9BEB9;
+      --muted: #878D87;
+      --rule: #333733;
+      --corten: #E0784A;
+      --corten-soft: #3A2118;
+      --ochre: #D6A63F;
+      --ochre-soft: #352C13;
+      --eucalypt: #6FB894;
+      --eucalypt-soft: #16291F;
+      --slate: #7BA3C4;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #141614;
+    --surface: #1C1F1D;
+    --surface-2: #262A27;
+    --ink: #ECEEEB;
+    --ink-2: #B9BEB9;
+    --muted: #878D87;
+    --rule: #333733;
+    --corten: #E0784A;
+    --corten-soft: #3A2118;
+    --ochre: #D6A63F;
+    --ochre-soft: #352C13;
+    --eucalypt: #6FB894;
+    --eucalypt-soft: #16291F;
+    --slate: #7BA3C4;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 44px;
+  }
+
+  .num { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-size: clamp(30px, 5vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -.025em;
+    font-weight: 800;
+    margin: 8px 0 0;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-size: 21px;
+    letter-spacing: -.015em;
+    font-weight: 700;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 { font-size: 15px; font-weight: 700; margin: 0; letter-spacing: -.005em; }
+
+  p { margin: 0; max-width: 68ch; color: var(--ink-2); }
+
+  header .lede { margin-top: 14px; font-size: 17px; }
+
+  section { display: flex; flex-direction: column; gap: 18px; }
+
+  .sec-head { display: flex; flex-direction: column; gap: 5px; border-top: 2px solid var(--ink); padding-top: 12px; }
+
+  /* ---------- headline figures ---------- */
+  .figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+
+  .fig {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow);
+  }
+  .fig.lead { border-color: var(--corten); border-width: 1px 1px 1px 4px; }
+
+  .fig .val { font-size: 30px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+  .fig.lead .val { color: var(--corten); }
+  .fig .sub { font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- aging ramp ---------- */
+  .ramp { display: flex; flex-direction: column; gap: 9px; }
+  .band { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 14px; }
+  .band .label { font-size: 12px; color: var(--muted); letter-spacing: .03em; }
+  .band .track { background: var(--surface-2); border-radius: 2px; height: 26px; overflow: hidden; }
+  .band .fill { height: 100%; border-radius: 2px; }
+  .band .amt { font-size: 14px; font-weight: 600; min-width: 96px; text-align: right; }
+
+  /* ---------- action rows ---------- */
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 4px 1fr auto;
+    gap: 0 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .row .stripe { background: var(--rule); }
+  .row.crit .stripe { background: var(--corten); }
+  .row.warn .stripe { background: var(--ochre); }
+  .row.ok   .stripe { background: var(--eucalypt); }
+
+  .row .body { padding: 14px 0 14px 2px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .row .who { font-weight: 700; font-size: 15.5px; letter-spacing: -.005em; }
+  .row .meta { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+  .row .right { padding: 14px 18px 14px 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; justify-content: center; }
+  .row .money { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+
+  .pill {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .pill.crit { background: var(--corten-soft); color: var(--corten); }
+  .pill.warn { background: var(--ochre-soft); color: var(--ochre); }
+  .pill.ok   { background: var(--eucalypt-soft); color: var(--eucalypt); }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--rule); }
+  th {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.r, th.r { text-align: right; }
+  tfoot td { font-weight: 700; border-top: 2px solid var(--ink); border-bottom: none; background: var(--surface-2); }
+
+  /* ---------- notes / email drafts ---------- */
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--slate);
+    border-radius: 3px;
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 8px;
+    box-shadow: var(--shadow);
+  }
+  .note.flag { border-left-color: var(--ochre); }
+
+  details {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+  }
+  summary {
+    cursor: pointer; padding: 13px 18px; font-weight: 600; font-size: 14.5px;
+    list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "＋"; color: var(--muted); font-size: 15px; }
+  details[open] summary::after { content: "－"; }
+  summary:focus-visible { outline: 2px solid var(--corten); outline-offset: -2px; }
+  .draft {
+    margin: 0; padding: 0 18px 18px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.65; white-space: pre-wrap;
+    color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: 14px;
+  }
+
+  ol.steps { margin: 0; padding-left: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 12px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: start; }
+  ol.steps li::before {
+    content: counter(s);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; font-weight: 700; color: var(--surface);
+    background: var(--corten); width: 26px; height: 26px; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--muted); font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+
+  @media (max-width: 620px) {
+    .band { grid-template-columns: 74px 1fr; }
+    .band .amt { grid-column: 2; text-align: left; min-width: 0; }
+    .row { grid-template-columns: 4px 1fr; }
+    .row .right { padding: 0 16px 14px; align-items: flex-start; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">QLD Group · Sanctum — Wunderbuild, 13 August 2026</div>
+    <h1>Recovery Ledger</h1>
+    <p class="lede">Money already earned and not yet banked, ranked by how fast it converts. Every figure below is pulled live from the job book — nothing here requires selling anything new.</p>
+  </header>
+
+  <section>
+    <div class="figures">
+      <div class="fig lead">
+        <div class="eyebrow">Recoverable now</div>
+        <div class="val num">$390,150</div>
+        <div class="sub">Overdue invoices plus approved variations never claimed (inc-GST)</div>
+      </div>
+      <div class="fig">
+        <div class="eyebrow">Overdue</div>
+        <div class="val num">$279,902</div>
+        <div class="sub">10 invoices, inc-GST · oldest 379 days</div>
+      </div>
+      <div class="fig">
+        <div class="eyebrow">Approved, unclaimed</div>
+        <div class="val num">$100,225</div>
+        <div class="sub">5 variations, ex-GST · all on one job</div>
+      </div>
+      <div class="fig">
+        <div class="eyebrow">Total outstanding</div>
+        <div class="val num">$482,739</div>
+        <div class="sub">16 invoices, inc-GST · $202,837 not yet due</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">01 — Debtors</div>
+      <h2>How old the overdue money is</h2>
+    </div>
+    <p>Two thirds of the overdue balance sits in the 31–90 day band, which is the band that still collects with a phone call. Past 180 days, collection rates fall sharply and the decision changes from chasing to recovering.</p>
+    <div class="ramp">
+      <div class="band">
+        <div class="label num">0–30 days</div>
+        <div class="track"><div class="fill" style="width: 40.4%; background: var(--eucalypt);"></div></div>
+        <div class="amt num">$72,207</div>
+      </div>
+      <div class="band">
+        <div class="label num">31–90 days</div>
+        <div class="track"><div class="fill" style="width: 100%; background: var(--corten);"></div></div>
+        <div class="amt num">$178,621</div>
+      </div>
+      <div class="band">
+        <div class="label num">91–180 days</div>
+        <div class="track"><div class="fill" style="width: 4.9%; background: var(--ochre);"></div></div>
+        <div class="amt num">$8,775</div>
+      </div>
+      <div class="band">
+        <div class="label num">180+ days</div>
+        <div class="track"><div class="fill" style="width: 11.4%; background: var(--ochre);"></div></div>
+        <div class="amt num">$20,299</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">02 — Chase list</div>
+      <h2>Ten overdue invoices, largest first</h2>
+    </div>
+    <div class="rows">
+
+      <div class="row crit">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Brandon Linton — 80 Sunbird Chase, Parrearra</div>
+          <div class="meta num">INV 1042 · issued 18 May 2026 · due 25 May · brandonlinton73@gmail.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$135,789</div>
+          <span class="pill crit">80 days over</span>
+        </div>
+      </div>
+
+      <div class="row crit">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Rhys Davies — Shoreline Group</div>
+          <div class="meta num">INV 1040 · issued 12 May 2026 · due 19 May · rhysd@shorelinegroup.com.au</div>
+        </div>
+        <div class="right">
+          <div class="money num">$28,454</div>
+          <span class="pill crit">86 days over</span>
+        </div>
+      </div>
+
+      <div class="row warn">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Jenn Bennett-Hulin</div>
+          <div class="meta num">INV 1001 · issued 30 Jun 2025 · due 30 Jul 2025 · jennbenhul@outlook.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$19,806</div>
+          <span class="pill warn">379 days over</span>
+        </div>
+      </div>
+
+      <div class="row crit">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Shaun Parkinson — extra scope, 5 Wagtail Close</div>
+          <div class="meta num">INV 1041 · issued 18 May 2026 · due 25 May · shaun.parkinson@gmail.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$14,378</div>
+          <span class="pill crit">80 days over</span>
+        </div>
+      </div>
+
+      <div class="row ok">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Sian Rososinski — 164 Palmview Forest Drive</div>
+          <div class="meta num">INV 1050 · issued 23 Jul 2026 · due 30 Jul · sianjo1980@gmail.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$57,445</div>
+          <span class="pill ok">14 days over</span>
+        </div>
+      </div>
+
+      <div class="row ok">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Gabriel Miller — 3A Lynd Court, Buderim</div>
+          <div class="meta num">INV 1053 · issued 4 Aug 2026 · due 11 Aug · gabemiller@me.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$14,762</div>
+          <span class="pill ok">2 days over</span>
+        </div>
+      </div>
+
+      <div class="row warn">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Anthony Villani — 4 Mia Court</div>
+          <div class="meta num">INV 1028 · issued 10 Mar 2026 · due 17 Mar · avillani@usc.edu.au</div>
+        </div>
+        <div class="right">
+          <div class="money num">$4,697</div>
+          <span class="pill warn">149 days over</span>
+        </div>
+      </div>
+
+      <div class="row warn">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">David Poulsen — 410 Curramore Road</div>
+          <div class="meta num">INV 1032 · issued 30 Mar 2026 · due 6 Apr · dpoulsen7@bigpond.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$3,632</div>
+          <span class="pill warn">129 days over</span>
+        </div>
+      </div>
+
+      <div class="row warn">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Anthony Villani — 4 Mia Court</div>
+          <div class="meta num">INV 1020 · issued 6 Mar 2026 · due 13 Mar · avillani@usc.edu.au</div>
+        </div>
+        <div class="right">
+          <div class="money num">$446</div>
+          <span class="pill warn">153 days over</span>
+        </div>
+      </div>
+
+      <div class="row warn">
+        <div class="stripe"></div>
+        <div class="body">
+          <div class="who">Louise Bishop</div>
+          <div class="meta num">INV 1002 · issued 30 Jun 2025 · due 30 Jul 2025 · louisebishop60@bigpond.com</div>
+        </div>
+        <div class="right">
+          <div class="money num">$493</div>
+          <span class="pill warn">379 days over</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note flag">
+      <h3>Two invoices are 379 days old</h3>
+      <p>Bennett-Hulin ($19,806) and Bishop ($493) were both issued 30 June 2025. At that age the question is no longer whether to chase but whether to recover, formally demand, or write off — and carrying them at full value distorts the debtors ledger either way. Worth a decision with your accountant this month rather than another reminder.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">03 — Invoice now</div>
+      <h2>$100,225 of approved variations you never claimed</h2>
+    </div>
+    <p>All five are on Pruim (29 Orme Road, Buderim), all already <strong>approved by builder</strong>, all on a fixed-price contract — so each is billable today through a progress claim with variation lines. This is the single fastest money in the ledger: the work is approved, the client has agreed the price, and the invoice was simply never raised.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Variation — Pruim, 29 Orme Road</th>
+            <th class="r">Approved</th>
+            <th class="r">Claimed</th>
+            <th class="r">Claim now</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Lighting — supply only</td><td class="r num">$25,705</td><td class="r num">$0</td><td class="r num"><strong>$25,705</strong></td></tr>
+          <tr><td>Tiling — pool patio incl. stairs</td><td class="r num">$48,293</td><td class="r num">$24,146</td><td class="r num"><strong>$24,146</strong></td></tr>
+          <tr><td>Tiling — top balcony</td><td class="r num">$38,871</td><td class="r num">$19,435</td><td class="r num"><strong>$19,435</strong></td></tr>
+          <tr><td>Tiling — front entrance</td><td class="r num">$33,461</td><td class="r num">$16,730</td><td class="r num"><strong>$16,730</strong></td></tr>
+          <tr><td>Epoxy floor — garage</td><td class="r num">$14,209</td><td class="r num">$0</td><td class="r num"><strong>$14,209</strong></td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Total ex-GST</td><td class="r num">$160,539</td><td class="r num">$60,311</td><td class="r num">$100,225</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="note">
+      <h3>And $6,944 waiting on a signature</h3>
+      <p>Two corten steel edging variations on Linton (80 Sunbird Chase) sit at <em>awaiting client approval</em> — $5,265 for the revetment run and $1,679 for the house run. They can't be claimed until Brandon approves them, so the action is a chase, not an invoice.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">04 — Blind spot</div>
+      <h2>Six of nine live jobs have booked zero costs</h2>
+    </div>
+    <p>Across the active book, $239,648 of actual cost is recorded against $1,181,613 estimated — <strong>20.3% capture</strong>. Any margin figure Wunderbuild reports on these jobs is an artefact of missing data, not a result. This is why the system was showing 92–98% gross margins.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Active job</th>
+            <th class="r">Contract</th>
+            <th class="r">Est. cost</th>
+            <th class="r">Cost booked</th>
+            <th class="r">Capture</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Gabriel Miller — 1st stage</td><td class="r num">$26,840</td><td class="r num">$20,646</td><td class="r num">$0</td><td class="r num">0%</td></tr>
+          <tr><td>Juan Boshoff — landscaping</td><td class="r num">$128,067</td><td class="r num">$99,936</td><td class="r num">$0</td><td class="r num">0%</td></tr>
+          <tr><td>Juan Boshoff — eastern fence</td><td class="r num">$7,391</td><td class="r num">$5,686</td><td class="r num">$0</td><td class="r num">0%</td></tr>
+          <tr><td>Juan Boshoff — western fence</td><td class="r num">$12,167</td><td class="r num">$9,359</td><td class="r num">$0</td><td class="r num">0%</td></tr>
+          <tr><td>Purcell — demolition phase</td><td class="r num">$75,082</td><td class="r num">$59,443</td><td class="r num">$0</td><td class="r num">0%</td></tr>
+          <tr><td>Poulsen — 410 Curramore Rd</td><td class="r num">$66,033</td><td class="r num">$51,750</td><td class="r num">$0</td><td class="r num">0%</td></tr>
+          <tr><td>Linton — 80 Sunbird Chase</td><td class="r num">$274,321</td><td class="r num">$222,890</td><td class="r num">$3,012</td><td class="r num">1%</td></tr>
+          <tr><td>Rososinski — 164 Palmview Forest Dr</td><td class="r num">$208,892</td><td class="r num">$194,698</td><td class="r num">$45,000</td><td class="r num">23%</td></tr>
+          <tr><td>Pruim — 29 Orme Road</td><td class="r num">$422,371</td><td class="r num">$517,205</td><td class="r num">$191,636</td><td class="r num">37%</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Active book</td><td class="r num">$1,221,164</td><td class="r num">$1,181,613</td><td class="r num">$239,648</td><td class="r num">20%</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="note flag">
+      <h3>Pruim is costing more than it sells for</h3>
+      <p>Estimated cost of $517,205 against a $422,371 contract — the job is $94,834 underwater on the contract alone, and only recovers through $244,713 of variations. That means it was underscoped by roughly 58% at quote. It's also the largest job in the book, which is the pattern worth watching: right now margin gets worse as jobs get bigger.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">05 — Reconcile</div>
+      <h2>$940,293 of completed work with no invoice recorded</h2>
+    </div>
+    <p>Fourteen completed jobs — $940,293 of contract value with $246,027 of cost sunk into them — carry no progress-claim records at all. Some haven't been touched since July 2025.</p>
+    <div class="note">
+      <h3>Don't assume the worst, but don't leave it</h3>
+      <p>The likely explanation is that these were invoiced directly in Xero and never recorded in Wunderbuild. The alternative — that some portion was genuinely never billed — would be serious. One hour reconciling this list against Xero settles it, and until it's settled you have no reliable margin history on any completed job.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">06 — Drafts</div>
+      <h2>Chase letters, ready to review</h2>
+    </div>
+    <p>Written for you to read, adjust and send yourself. Nothing here is sent automatically — an invoice email can't be unsent, and a wrong one costs more than a late one.</p>
+
+    <details>
+      <summary>Linton — $135,789, 80 days overdue</summary>
+      <pre class="draft">Subject: Invoice 1042 — 80 Sunbird Chase — outstanding
+
+Hi Brandon,
+
+Invoice 1042 for $135,789 was issued on 18 May and fell due on 25 May, so
+it's now around 80 days outstanding. I wanted to check in directly rather
+than keep sending reminders.
+
+Is there anything holding up payment at your end — a query on the claim, or
+something on site you'd like reviewed first? If so, tell me and I'll get it
+sorted this week. If not, could you let me know when I can expect the funds?
+
+I'd also like to get the two corten steel edging variations across the line
+while we're talking — $5,265 for the revetment run and $1,679 for the house
+run. Both are ready for your approval so we can schedule them.
+
+Thanks,
+Paul Smith
+QLD Group</pre>
+    </details>
+
+    <details>
+      <summary>Rhys Davies — $28,454, 86 days overdue</summary>
+      <pre class="draft">Subject: Invoice 1040 — outstanding since May
+
+Hi Rhys,
+
+Invoice 1040 for $28,454 was issued 12 May and due 19 May — it's now sitting
+at about 86 days.
+
+Given we work in the same industry I'd rather sort this with a call than a
+letter. Can you let me know either a payment date or what's outstanding from
+our side that's holding it up?
+
+Thanks,
+Paul Smith
+QLD Group</pre>
+    </details>
+
+    <details>
+      <summary>Pruim — variation claim cover note, $100,225</summary>
+      <pre class="draft">Subject: 29 Orme Road — variation claim
+
+Hi Petros,
+
+Please find attached a claim covering the variations we've completed and you
+previously approved:
+
+  Lighting (supply only)                        $25,705
+  Tiling — pool patio incl. stairs (balance)    $24,146
+  Tiling — top balcony (balance)                $19,435
+  Tiling — front entrance (balance)             $16,730
+  Epoxy floor — garage                          $14,209
+                                    Total ex-GST $100,225
+
+These were all approved as we went and the work is complete — the invoicing
+simply hadn't caught up with the site. Apologies for the delay in getting it
+to you in one hit rather than progressively.
+
+Happy to walk through any line if you'd like.
+
+Thanks,
+Paul Smith
+QLD Group</pre>
+    </details>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">07 — This week</div>
+      <h2>The order that gets the most cash in fastest</h2>
+    </div>
+    <ol class="steps">
+      <li><div><strong>Raise the Pruim variation claim — $100,225.</strong> Fully approved, work complete, no conversation required beyond sending it. Preview it before it goes.</div></li>
+      <li><div><strong>Call Brandon Linton about $135,789.</strong> One call covers 49% of the entire overdue book, and picks up the $6,944 of corten edging approvals while you're on the phone.</div></li>
+      <li><div><strong>Reconcile the 14 zero-claim jobs against Xero.</strong> One hour. It either closes a reporting gap or finds real money — and it's the last thing standing between you and a margin number you can trust.</div></li>
+    </ol>
+  </section>
+
+  <footer>
+    <div>Pulled live from Wunderbuild on 13 August 2026 across 9 active and 29 completed jobs. Progress-claim figures are inc-GST; contract, costing and variation figures are ex-GST.</div>
+    <div>Re-run with the <span class="num">receivables-sweep</span> skill. Weekly is right for a book this size.</div>
+  </footer>
+
+</div>
