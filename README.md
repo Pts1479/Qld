@@ -16,11 +16,29 @@ software to sell to other trades would not have touched any of that.
 
 | Path | What it does |
 |---|---|
-| `.claude/skills/receivables-sweep/` | Skill that runs the claims-and-receivables sweep and produces a ranked chase-and-claim list |
-| `.claude/skills/cost-capture/` | Skill that finds job costs which should be booked and aren't — ignored bills, unprocessed timesheets, empty costing lines |
+| `.claude/skills/daily-reconcile/` | **The daily agent.** Matches bills, claims, costings, POs and timesheets field-by-field against every active job; reports exceptions only |
+| `.claude/skills/receivables-sweep/` | Deep look at money owed — aged debtors, claimable variations |
+| `.claude/skills/cost-capture/` | Deep look at money spent — ignored bills, unprocessed timesheets, empty costing lines |
+| `scripts/daily-reconcile.js` | Read-only sweep behind the daily agent |
 | `scripts/receivables-sweep.js` | Read-only query, pasted into the Wunderbuild MCP `run_query` tool |
 | `scripts/cost-capture-sweep.js` | Read-only query for the cost side. Bills are fetched separately via `manage_bills` |
+| `state/reconcile-latest.json` | Previous run's fingerprints, so the daily agent reports changes rather than repeating itself |
 | `reports/` | Dated output. Each report is a snapshot, not a living document |
+
+## The daily agent
+
+Runs at **7am Brisbane**, ahead of the day being committed. One pass over the active
+book, reporting only records whose fields don't line up:
+
+- a bill with no job coding, or coded but never allocated to a costing category
+- a purchase order raised and never received, so committed cost never became actual
+- a timesheet unprocessed past 14 days, or processed but not linked to a costing item
+- an approved variation never claimed, or an invoice past its grace period
+- a job billing the client more than 25 points ahead of its recorded cost
+- totals disagreeing with the sum of their parts
+
+**If nothing is new and nothing resolved, it says nothing.** A daily report that repeats
+yesterday gets ignored, which defeats the point.
 
 ## Running the sweep
 

@@ -1,0 +1,7 @@
+{
+  "generatedAt": null,
+  "note": "Snapshot of the previous daily-reconcile run. The agent compares each run's `fingerprints` against this file, reports only what is new or resolved, then overwrites it and commits. Seeded empty: the first real run will report every open exception as new, which is expected once.",
+  "exceptionCount": null,
+  "counts": {},
+  "fingerprints": []
+}
